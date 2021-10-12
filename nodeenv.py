@@ -34,15 +34,19 @@ try:  # pragma: no cover (py2 only)
     from ConfigParser import SafeConfigParser as ConfigParser
     # noinspection PyCompatibility
     import urllib2
+
     iteritems = operator.methodcaller('iteritems')
     import httplib
+
     IncompleteRead = httplib.IncompleteRead
 except ImportError:  # pragma: no cover (py3 only)
     from configparser import ConfigParser
     # noinspection PyUnresolvedReferences
     import urllib.request as urllib2
+
     iteritems = operator.methodcaller('items')
     import http
+
     IncompleteRead = http.client.IncompleteRead
 
 from pkg_resources import parse_version
@@ -59,6 +63,7 @@ is_CYGWIN = platform.system().startswith(('CYGWIN', 'MSYS'))
 
 ignore_ssl_certs = False
 
+
 # ---------------------------------------------------------
 # Utils
 
@@ -69,19 +74,19 @@ def to_utf8(text):
     if not text or is_PY3:
         return text
 
-    try:           # unicode or pure ascii
+    try:  # unicode or pure ascii
         return text.encode("utf8")
     except UnicodeDecodeError:
-        try:       # successful UTF-8 decode means it's pretty sure UTF-8
+        try:  # successful UTF-8 decode means it's pretty sure UTF-8
             text.decode("utf8")
             return text
         except UnicodeDecodeError:
-            try:   # get desperate; and yes, this has a western hemisphere bias
+            try:  # get desperate; and yes, this has a western hemisphere bias
                 return text.decode("cp1252").encode("utf8")
             except UnicodeDecodeError:
                 pass
 
-    return text    # return unchanged, hope for the best
+    return text  # return unchanged, hope for the best
 
 
 class Config(object):
@@ -120,7 +125,7 @@ class Config(object):
 
             for attr, val in iteritems(vars(cls)):
                 if attr.startswith('_') or not \
-                   ini_file.has_option(section, attr):
+                        ini_file.has_option(section, attr):
                     continue
 
                 if isinstance(val, bool):
@@ -132,6 +137,10 @@ class Config(object):
                     print('CONFIG {0}: {1} = {2}'.format(
                         os.path.basename(configfile), attr, val))
                 setattr(cls, attr, val)
+
+        if os.path.exists(".node-version"):
+            with open(".node-version", "r") as v_file:
+                setattr(cls, "node", v_file.readlines(1)[0])
 
     @classmethod
     def _dump(cls):
@@ -190,6 +199,7 @@ def create_logger():
         fs = "%s" if getattr(record, "continued", False) else "%s\n"
         self.stream.write(fs % to_utf8(msg))
         self.flush()
+
     logging.StreamHandler.emit = emit
 
     # create console handler and set level to debug
@@ -223,11 +233,11 @@ def parse_args(check=True):
     parser.add_option(
         '-n', '--node', dest='node', metavar='NODE_VER', default=Config.node,
         help='The node.js version to use, e.g., '
-        '--node=0.4.3 will use the node-v0.4.3 '
-        'to create the new environment. '
-        'The default is last stable version (`latest`). '
-        'Use `lts` to use the latest LTS release. '
-        'Use `system` to use system-wide node.')
+             '--node=0.4.3 will use the node-v0.4.3 '
+             'to create the new environment. '
+             'The default is the version specified in `.node-version` if exists, or last stable version (`latest`). '
+             'Use `lts` to use the latest LTS release. '
+             'Use `system` to use system-wide node.')
 
     parser.add_option(
         '--mirror',
@@ -238,12 +248,12 @@ def parse_args(check=True):
         parser.add_option(
             '-j', '--jobs', dest='jobs', default=Config.jobs,
             help='Sets number of parallel commands at node.js compilation. '
-            'The default is 2 jobs.')
+                 'The default is 2 jobs.')
 
         parser.add_option(
             '--load-average', dest='load_average',
             help='Sets maximum load average for executing parallel commands '
-            'at node.js compilation.')
+                 'at node.js compilation.')
 
         parser.add_option(
             '--without-ssl', dest='without_ssl',
@@ -284,7 +294,7 @@ def parse_args(check=True):
     parser.add_option(
         '-C', '--config-file', dest='config_file', default=None,
         help="Load a different file than '~/.nodeenvrc'. "
-        "Pass an empty string for no config (use built-in defaults).")
+             "Pass an empty string for no config (use built-in defaults).")
 
     parser.add_option(
         '-r', '--requirements',
@@ -309,16 +319,16 @@ def parse_args(check=True):
         '--with-npm', dest='with_npm',
         action='store_true', default=Config.with_npm,
         help='Build without installing npm into the new virtual environment. '
-        'Required for node.js < 0.6.3. By default, the npm included with '
-        'node.js is used. Under Windows, this defaults to true.')
+             'Required for node.js < 0.6.3. By default, the npm included with '
+             'node.js is used. Under Windows, this defaults to true.')
 
     parser.add_option(
         '--npm', dest='npm',
         metavar='NPM_VER', default=Config.npm,
         help='The npm version to use, e.g., '
-        '--npm=0.3.18 will use the npm-0.3.18.tgz '
-        'tarball to install. '
-        'The default is last available version (`latest`).')
+             '--npm=0.3.18 will use the npm-0.3.18.tgz '
+             'tarball to install. '
+             'The default is last available version (`latest`).')
 
     parser.add_option(
         '--no-npm-clean', dest='no_npm_clean',
@@ -516,12 +526,12 @@ def is_x86_64_musl():
 
 def get_node_bin_url(version):
     archmap = {
-        'x86':    'x86',  # Windows Vista 32
-        'i686':   'x86',
+        'x86': 'x86',  # Windows Vista 32
+        'i686': 'x86',
         'x86_64': 'x64',  # Linux Ubuntu 64
-        'amd64':  'x64',  # FreeBSD 64bits
-        'AMD64':  'x64',  # Windows Server 2012 R2 (x64)
-        'armv6l': 'armv6l',     # arm
+        'amd64': 'x64',  # FreeBSD 64bits
+        'AMD64': 'x64',  # Windows Server 2012 R2 (x64)
+        'armv6l': 'armv6l',  # arm
         'armv7l': 'armv7l',
         'armv8l': 'armv7l',
         'aarch64': 'arm64',
@@ -529,8 +539,8 @@ def get_node_bin_url(version):
         'arm64/v8': 'arm64',
         'armv8': 'arm64',
         'armv8.4': 'arm64',
-        'ppc64le': 'ppc64le',   # Power PC
-        's390x': 's390x',       # IBM S390x
+        'ppc64le': 'ppc64le',  # Power PC
+        's390x': 's390x',  # IBM S390x
     }
     sysinfo = {
         'system': platform.system().lower(),
@@ -585,8 +595,8 @@ def download_node_src(node_url, src_dir, opt):
 
     with ctx as archive:
         node_ver = re.escape(opt.node)
-        rexp_string = r"node-v%s[^/]*/(README\.md|CHANGELOG\.md|LICENSE)"\
-            % node_ver
+        rexp_string = r"node-v%s[^/]*/(README\.md|CHANGELOG\.md|LICENSE)" \
+                      % node_ver
         extract_list = [
             member
             for member in members(archive)
@@ -604,6 +614,7 @@ def urlopen(url):
         context.verify_mode = ssl.CERT_NONE
         return urllib2.urlopen(req, context=context)
     return urllib2.urlopen(req)
+
 
 # ---------------------------------------------------------
 # Virtual environment functions
@@ -1333,7 +1344,6 @@ if [ -n "$BASH" -o -n "$ZSH_VERSION" ] ; then
     hash -r
 fi
 """
-
 
 ACTIVATE_FISH = """
 
